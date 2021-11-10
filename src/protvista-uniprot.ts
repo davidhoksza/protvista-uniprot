@@ -62,6 +62,7 @@ type ProtvistaTrackConfig = {
   trackType: TrackType;
   data: {
     url: string;
+    payload?: string;
     adapter?:
       | 'protvista-feature-adapter'
       | 'protvista-structure-adapter'
@@ -159,11 +160,22 @@ class ProtvistaUniprot extends LitElement {
     const accession = this.accession;
     if (accession && this.config) {
       // Get the list of unique urls
-      const urls = this.config.categories
-        .map(({ tracks }) => tracks.map(({ data }) => data[0].url))
+      const urls_data = this.config.categories
+        .map(({ tracks }) => tracks.map(({ data }) => ({url: data[0].url, payload: data[0].payload})))
         .flat();
+
+      console.log("urls_data", urls_data);
+      const urls = urls_data.filter(d => d.payload === undefined).map(d => d.url);
+      const data = urls_data.filter(d => d.payload !== undefined);
+
       const uniqueUrls = [...new Set(urls)];
+      console.log(uniqueUrls);
+      console.log(data);
       // Get the data for all urls and store it
+      data.forEach(d => {
+        this.rawData[d.url] = d.payload;
+        this.hasData = true
+      })
       await Promise.all(
         uniqueUrls.map((url: string) =>
           load(url.replace('{accession}', accession))
